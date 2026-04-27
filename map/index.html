@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet.photon.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Modern Google Maps-like styling */
+        .leaflet-container {
+            background: #f0f0f0 !important;
+            font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            cursor: crosshair !important;
+        }
+
+        .leaflet-control-container .leaflet-routing-container-hide {
+            display: none;
+        }
+
+        .leaflet-control-layers {
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+            border: 1px solid rgba(96,125,139,0.28);
+            background: rgba(12,18,28,0.96);
+            color: #f1f5f9;
+            backdrop-filter: blur(20px);
+            padding: 8px !important;
+        }
+
+        .leaflet-control-layers-toggle {
+            background: rgba(30,41,59,0.98) !important;
+            color: #f1f5f9 !important;
+            border: 1px solid rgba(96,125,139,0.35) !important;
+            border-radius: 6px !important;
+            width: 36px !important;
+            height: 36px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+            background-image: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-decoration: none !important;
+        }
+
+        .leaflet-control-layers-toggle::before {
+            content: "»";
+            color: #ffffff;
+            font-size: 20px;
+            line-height: 1;
+            font-weight: 700;
+        }
+
+        .leaflet-control-layers-toggle:hover {
+            background: rgba(51,65,85,0.95) !important;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35) !important;
+        }
+
+        .leaflet-control-layers-list {
+            font-size: 13px;
+            background: rgba(12,18,28,0.92);
+            border-radius: 8px;
+            padding: 8px 0;
+        }
+
+        .leaflet-control-layers label {
+            margin: 6px 10px;
+            font-weight: 500;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .leaflet-control-layers label:hover {
+            background: rgba(148,163,184,0.1);
+            color: #10b981;
+        }
+
+        .leaflet-control-layers input[type="radio"],
+        .leaflet-control-layers input[type="checkbox"] {
+            accent-color: #10b981;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+
+        .leaflet-control-layers input[type="radio"],
+        .leaflet-control-layers input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .leaflet-control-zoom-in,
+        .leaflet-control-zoom-out {
+            background: rgba(30,41,59,0.95) !important;
+            border: 1px solid rgba(96,125,139,0.35) !important;
+            border-radius: 6px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+            color: #f1f5f9 !important;
+            font-weight: bold !important;
+            width: 36px !important;
+            height: 36px !important;
+            line-height: 34px !important;
+            margin-bottom: 4px !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .leaflet-control-zoom-in:hover,
+        .leaflet-control-zoom-out:hover {
+            background: rgba(51,65,85,0.95) !important;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35) !important;
+            color: #10b981 !important;
+        }
+
+        .leaflet-control-scale {
+            background: rgba(30,41,59,0.92) !important;
+            border-radius: 6px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+            border: 1px solid rgba(96,125,139,0.28) !important;
+            color: #e2e8f0 !important;
+        }
+
+        .leaflet-control-scale-line {
+            background: rgba(16,185,129,0.2) !important;
+            border: 1px solid #10b981 !important;
+            color: #10b981 !important;
+        }
+
+        .leaflet-control-attribution {
+            background: rgba(30,41,59,0.85) !important;
+            border-radius: 6px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+            border: 1px solid rgba(96,125,139,0.28) !important;
+            padding: 4px 8px !important;
+        }
+
+        .leaflet-control-attribution a {
+            color: #10b981 !important;
+            text-decoration: none !important;
+        }
+
+        .leaflet-control-attribution a:hover {
+            color: #34d399 !important;
+            text-decoration: underline !important;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        </style>
+        <title>Greenora Map</title>
+    </head>
+    <body>
+        <div id="map">
+            <!-- Loading indicator -->
+            <div id="loading-indicator" style="
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(15,23,42,0.95);
+                padding: 20px 30px;
+                border-radius: 12px;
+                border: 1px solid rgba(148,163,184,0.16);
+                box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+                z-index: 1000;
+                font-family: 'Roboto', Arial, sans-serif;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            ">
+                <div style="
+                    width: 20px;
+                    height: 20px;
+                    border: 2px solid rgba(148,163,184,0.35);
+                    border-top: 2px solid #34d399;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                "></div>
+                <span style="color: #e2e8f0; font-weight: 500;">Loading map...</span>
+            </div>
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet.photon.js"></script>
+        <script>
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[27.1381767207555,74.450731700105],[30.11794944489187,80.59988902088425]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+
+        // Add base tile layer (OpenStreetMap)
+        var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        });
+
+        // Add satellite-like base layer (Esri World Imagery)
+        var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            maxZoom: 19
+        });
+
+        // Add terrain base layer
+        var terrainLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+            maxZoom: 17
+        });
+
+        // Set default base layer
+        osmLayer.addTo(map);
+
+        // Create base layers object for layer control
+        var baseLayers = {
+            "OpenStreetMap": osmLayer,
+            "Satellite": satelliteLayer,
+            "Terrain": terrainLayer
+        };
+
+        map.createPane('pane_Labels');
+        map.getPane('pane_Labels').style.zIndex = 650;
+
+        var labelsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
+            attribution: 'Labels © <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 19,
+            subdomains: 'abcd',
+            pane: 'pane_Labels',
+            opacity: 0.95
+        });
+
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // modify popup if contains media
+        function addClassToPopupIfMedia(content, popup) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            var imgTd = tempDiv.querySelector('td img');
+            if (imgTd) {
+                var src = imgTd.getAttribute('src');
+                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp3|wav|ogg|aac)$/i.test(src)) {
+                    var audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = src;
+                    imgTd.parentNode.replaceChild(audio, imgTd);
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp4|webm|ogg|mov)$/i.test(src)) {
+                    var video = document.createElement('video');
+                    video.controls = true;
+                    video.src = src;
+                    video.style.width = "400px";
+                    video.style.height = "300px";
+                    video.style.maxHeight = "60vh";
+                    video.style.maxWidth = "60vw";
+                    imgTd.parentNode.replaceChild(video, imgTd);
+                    popup._contentNode.classList.add('media');
+                    // Aggiorna il popup quando il video carica i metadati
+                    video.addEventListener('loadedmetadata', function() {
+                        popup.update();
+                    });
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else {
+                    popup._contentNode.classList.remove('media');
+                }
+            } else {
+                popup._contentNode.classList.remove('media');
+            }
+        }
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+
+        // Add scale control
+        L.control.scale({
+            position: 'bottomleft',
+            imperial: false
+        }).addTo(map);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_Risk_Map_0');
+        map.getPane('pane_Risk_Map_0').style.zIndex = 400;
+        var img_Risk_Map_0 = 'data/Risk_Map_0.png';
+        var img_bounds_Risk_Map_0 = [[27.79739697396028,76.7404589542527],[29.924235257384026,79.11242664351686]];
+        var layer_Risk_Map_0 = new L.imageOverlay(img_Risk_Map_0,
+                                              img_bounds_Risk_Map_0,
+                                              {pane: 'pane_Risk_Map_0', opacity: 0.58});
+        bounds_group.addLayer(layer_Risk_Map_0);
+        map.addLayer(layer_Risk_Map_0);
+        map.createPane('pane_NDVI_norm_1');
+        map.getPane('pane_NDVI_norm_1').style.zIndex = 395;
+        var img_NDVI_norm_1 = 'data/NDVI_norm_1.png';
+        var img_bounds_NDVI_norm_1 = [[27.79739697396028,76.7404589542527],[29.924235257384026,79.11242664351686]];
+        var layer_NDVI_norm_1 = new L.imageOverlay(img_NDVI_norm_1,
+                                              img_bounds_NDVI_norm_1,
+                                              {pane: 'pane_NDVI_norm_1', opacity: 0.58});
+        bounds_group.addLayer(layer_NDVI_norm_1);
+        setBounds();
+
+        // Create overlays object for layer control
+        var overlays = {
+            "Risk Map": layer_Risk_Map_0,
+            "NDVI Vegetation": layer_NDVI_norm_1,
+            "Place Labels": labelsLayer
+        };
+
+        // Initially add just the risk overlay to keep colors clear by default
+        map.addLayer(layer_Risk_Map_0);
+        map.addLayer(labelsLayer);
+
+        var leafletLayers = {
+            'risk-map': layer_Risk_Map_0,
+            'ndvi-map': layer_NDVI_norm_1
+        };
+
+        var overlayCanvasCache = {};
+
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        function getCanvasForLayer(layer, key) {
+            if (overlayCanvasCache[key]) {
+                return overlayCanvasCache[key];
+            }
+
+            if (!layer || !layer._image || !layer._image.complete || !layer._image.naturalWidth) {
+                return null;
+            }
+
+            var canvas = document.createElement('canvas');
+            canvas.width = layer._image.naturalWidth;
+            canvas.height = layer._image.naturalHeight;
+            var ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(layer._image, 0, 0);
+            overlayCanvasCache[key] = canvas;
+            return canvas;
+        }
+
+        function sampleLayerColor(layer, key, lat, lng) {
+            if (!layer || !layer.getBounds || !layer.getBounds().contains([lat, lng])) {
+                return null;
+            }
+
+            var canvas = getCanvasForLayer(layer, key);
+            if (!canvas) return null;
+
+            var bounds = layer.getBounds();
+            var north = bounds.getNorth();
+            var south = bounds.getSouth();
+            var east = bounds.getEast();
+            var west = bounds.getWest();
+
+            var xNorm = (lng - west) / (east - west);
+            var yNorm = (north - lat) / (north - south);
+            var x = clamp(Math.round(xNorm * (canvas.width - 1)), 0, canvas.width - 1);
+            var y = clamp(Math.round(yNorm * (canvas.height - 1)), 0, canvas.height - 1);
+
+            var pixel = canvas.getContext('2d', { willReadFrequently: true }).getImageData(x, y, 1, 1).data;
+            if (!pixel || pixel[3] < 10) return null;
+
+            return { r: pixel[0], g: pixel[1], b: pixel[2], a: pixel[3] };
+        }
+
+        function scoreRedDominance(pixel) {
+            if (!pixel) return null;
+            var r = pixel.r / 255;
+            var g = pixel.g / 255;
+            var b = pixel.b / 255;
+            var max = Math.max(r, g, b);
+            var min = Math.min(r, g, b);
+            var delta = max - min;
+            var saturation = max === 0 ? 0 : (delta / max);
+            var hue = 0;
+
+            if (delta !== 0) {
+                if (max === r) hue = 60 * (((g - b) / delta) % 6);
+                else if (max === g) hue = 60 * (((b - r) / delta) + 2);
+                else hue = 60 * (((r - g) / delta) + 4);
+            }
+
+            if (hue < 0) hue += 360;
+
+            // Risk palette mapping: red(100) -> orange(75) -> yellow(45) -> green(10)
+            var hueRisk;
+            if (hue <= 15 || hue >= 345) hueRisk = 100;
+            else if (hue <= 45) hueRisk = 75;
+            else if (hue <= 75) hueRisk = 45;
+            else if (hue <= 170) hueRisk = 10;
+            else hueRisk = 35;
+
+            // Penalize dull/gray pixels; emphasize vivid thematic pixels.
+            return clamp(hueRisk * (0.55 + (saturation * 0.45)), 0, 100);
+        }
+
+        function scoreGreenDominance(pixel) {
+            if (!pixel) return null;
+            var greenDominance = pixel.g - ((pixel.r + pixel.b) / 2);
+            return clamp((greenDominance + 255) / 2.55, 0, 100);
+        }
+
+        // Add layer control
+        L.control.layers(baseLayers, overlays, {
+            position: 'topright',
+            collapsed: true
+        }).addTo(map);
+
+        window.addEventListener('message', function(event) {
+            if (!event.data || event.data.type !== 'UPDATE_LAYERS') {
+                return;
+            }
+            var activeLayerIds = event.data.payload.activeLayerIds || [];
+
+            Object.keys(leafletLayers).forEach(function(id) {
+                var layer = leafletLayers[id];
+                if (activeLayerIds.includes(id) && !map.hasLayer(layer)) {
+                    map.addLayer(layer);
+                } else if (!activeLayerIds.includes(id) && map.hasLayer(layer)) {
+                    map.removeLayer(layer);
+                }
+            });
+        });
+
+        // Add zoom to location handler
+        window.addEventListener('message', function(event) {
+            if (!event.data || event.data.type !== 'zoomToLocation') {
+                return;
+            }
+            var location = event.data.location;
+            if (location && location.bounds) {
+                // Zoom to the specified bounds
+                map.fitBounds(location.bounds);
+            }
+        });
+
+        // Add click event handler for location analysis
+        map.on('click', function(e) {
+            var lat = e.latlng.lat;
+            var lng = e.latlng.lng;
+            var riskPixel = sampleLayerColor(layer_Risk_Map_0, 'risk', lat, lng);
+            var ndviPixel = sampleLayerColor(layer_NDVI_norm_1, 'ndvi', lat, lng);
+            var riskOverlayScore = scoreRedDominance(riskPixel);
+            var ndviGreennessScore = scoreGreenDominance(ndviPixel);
+
+            // Send location data to parent window
+            window.parent.postMessage({
+                type: 'LOCATION_CLICKED',
+                payload: {
+                    latitude: lat,
+                    longitude: lng,
+                    timestamp: new Date().toISOString(),
+                    riskOverlayScore: riskOverlayScore,
+                    ndviGreennessScore: ndviGreennessScore
+                }
+            }, '*');
+        });
+
+        function hideLoadingIndicator() {
+            var loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        map.whenReady(hideLoadingIndicator);
+        map.on('load', hideLoadingIndicator);
+        map.on('tileload', hideLoadingIndicator);
+        setTimeout(hideLoadingIndicator, 2500);
+
+        L.ImageOverlay.include({
+            getBounds: function () {
+                return this._bounds;
+            }
+        });
+        </script>        
+    </body>
+</html>

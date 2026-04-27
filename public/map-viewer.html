@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Greenora Map - ArcGIS</title>
+    
+    <!-- ArcGIS CSS -->
+    <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
+    
+    <style>
+        html, body, #map {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #0f172a;
+        }
+
+        /* Custom overlay styling */
+        .map-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 12px;
+            color: #cbd5e1;
+            z-index: 999;
+            backdrop-filter: blur(10px);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .map-overlay strong {
+            color: #10b981;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .map-overlay div {
+            line-height: 1.6;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            margin-right: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .esri-ui-top-left {
+            padding-top: 20px !important;
+            padding-left: 20px !important;
+        }
+
+        /* Custom popup */
+        .esri-popup {
+            border-radius: 8px !important;
+        }
+
+        .esri-popup__header {
+            background: linear-gradient(to right, #ef4444, #f97316) !important;
+            border-radius: 8px 8px 0 0 !important;
+        }
+
+        .esri-popup__content {
+            background: #1e293b !important;
+            color: #e2e8f0 !important;
+        }
+
+        .esri-popup__close-button:hover {
+            background: rgba(148, 163, 184, 0.1) !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="map-overlay">
+        <div>
+            <strong>🌍 Greenora Map</strong>
+            <div><span class="status-dot"></span>System Online</div>
+            <div>Zoom: <span id="zoom-level">—</span></div>
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(148, 163, 184, 0.2); font-size: 11px;">
+                Powered by ESRI ArcGIS | Click to analyze location
+            </div>
+        </div>
+    </div>
+
+    <!-- ArcGIS JavaScript -->
+    <script src="https://js.arcgis.com/4.28/"></script>
+    
+    <script>
+        require([
+            'esri/Map',
+            'esri/views/MapView',
+        'esri/layers/GraphicsLayer',
+        'esri/layers/ImageryLayer',
+        'esri/Graphic',
+        'esri/geometry/Point',
+        'esri/symbols/SimpleMarkerSymbol',
+        'esri/symbols/SimpleLineSymbol',
+        'esri/Color',
+        'esri/PopupTemplate'
+    ], function(
+        Map,
+        MapView,
+        GraphicsLayer,
+        ImageryLayer,
+        Graphic,
+            SimpleLineSymbol,
+            Color,
+            PopupTemplate
+        ) {
+
+            // Create map
+            const map = new Map({
+                basemap: 'streets-night-vector'
+            });
+
+            // Create view
+            const view = new MapView({
+                container: 'map',
+                map: map,
+                center: [78.24, 28.65],
+                zoom: 9,
+                popup: {
+                    dockOptions: {
+                        position: 'bottom-right',
+                        breakpoint: false,
+                        buttonOptions: {
+                            title: 'Close Popup'
+                        }
+                    }
+                }
+            });
+
+            // Add satellite imagery basemap overlay
+            const imageryLayer = new ImageryLayer({
+                url: 'https://utility.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer',
+                title: 'Satellite Imagery',
+                id: 'imagery'
+            });
+            map.add(imageryLayer);
+
+            // Risk overlay as a graphics layer
+            const riskPolygon = {
+                type: 'polygon',
+                rings: [
+                    [76.74, 27.80],
+                    [79.11, 27.80],
+                    [79.11, 29.92],
+                    [76.74, 29.92],
+                    [76.74, 27.80]
+                ]
+            };
+
+            const riskGraphic = new Graphic({
+                geometry: riskPolygon,
+                symbol: {
+                    type: 'simple-fill',
+                    color: [239, 68, 68, 0.16],
+                    outline: {
+                        color: [220, 38, 38, 0.9],
+                        width: 2
+                    }
+                }
+            });
+
+            const riskLayer = new GraphicsLayer({
+                id: 'risk-map',
+                title: 'Risk Map',
+                visible: true
+            });
+            riskLayer.add(riskGraphic);
+            map.add(riskLayer);
+
+            // NDVI overlay as a graphics layer
+            const ndviPolygon = {
+                type: 'polygon',
+                rings: [
+                    [76.90, 28.00],
+                    [78.90, 28.00],
+                    [78.90, 29.20],
+                    [76.90, 29.20],
+                    [76.90, 28.00]
+                ]
+            };
+
+            const ndviGraphic = new Graphic({
+                geometry: ndviPolygon,
+                symbol: {
+                    type: 'simple-fill',
+                    color: [34, 197, 94, 0.18],
+                    outline: {
+                        color: [22, 163, 74, 0.9],
+                        width: 2
+                    }
+                }
+            });
+
+            const ndviLayer = new GraphicsLayer({
+                id: 'ndvi-map',
+                title: 'NDVI Map',
+                visible: true
+            });
+            ndviLayer.add(ndviGraphic);
+            map.add(ndviLayer);
+
+            // Update zoom display
+            view.watch('zoom', function(newZoom) {
+                document.getElementById('zoom-level').textContent = newZoom.toFixed(2);
+            });
+
+            // Handle map clicks for location analysis
+            view.on('click', function(event) {
+                const lat = event.mapPoint.latitude;
+                const lng = event.mapPoint.longitude;
+
+                // Risk analysis
+                const riskBounds = {
+                    north: 29.924235257384026,
+                    south: 27.79739697396028,
+                    east: 79.11242664351686,
+                    west: 76.7404589542527
+                };
+
+                const isInBounds = lat >= riskBounds.south && lat <= riskBounds.north &&
+                                   lng >= riskBounds.west && lng <= riskBounds.east;
+
+                let riskLevel = 'low';
+                let riskScore = 0;
+
+                if (isInBounds) {
+                    const centerLat = (riskBounds.north + riskBounds.south) / 2;
+                    const centerLng = (riskBounds.east + riskBounds.west) / 2;
+                    
+                    const latDiff = Math.abs(lat - centerLat);
+                    const lngDiff = Math.abs(lng - centerLng);
+                    const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+                    const maxDistance = Math.sqrt(
+                        Math.pow((riskBounds.north - riskBounds.south) / 2, 2) +
+                        Math.pow((riskBounds.east - riskBounds.west) / 2, 2)
+                    );
+
+                    riskScore = Math.max(0, (1 - (distance / maxDistance)) * 100);
+
+                    if (riskScore > 70) riskLevel = 'critical';
+                    else if (riskScore > 50) riskLevel = 'high';
+                    else if (riskScore > 30) riskLevel = 'medium';
+                    else riskLevel = 'low';
+                }
+
+                // Create popup template
+                const locationData = {
+                    latitude: lat.toFixed(6),
+                    longitude: lng.toFixed(6),
+                    riskLevel: riskLevel,
+                    riskScore: Math.round(riskScore),
+                    inMonitoredArea: isInBounds,
+                    vegetation: (60 + Math.random() * 30).toFixed(1),
+                    soilMoisture: (40 + Math.random() * 40).toFixed(1)
+                };
+
+                const riskColor = riskLevel === 'critical' ? '#ef4444' : 
+                                  riskLevel === 'high' ? '#f97316' : 
+                                  riskLevel === 'medium' ? '#eab308' : '#22c55e';
+
+                const riskIcon = riskLevel === 'critical' ? '🚨' : 
+                                 riskLevel === 'high' ? '⚠️' : 
+                                 riskLevel === 'medium' ? '⚡' : '✓';
+
+                // Create marker
+                const point = new Point({
+                    longitude: lng,
+                    latitude: lat
+                });
+
+                const markerSymbol = new SimpleMarkerSymbol({
+                    color: new Color(riskColor),
+                    outline: new SimpleLineSymbol({
+                        color: new Color([255, 255, 255]),
+                        width: 2
+                    }),
+                    size: '12px'
+                });
+
+                const popupTemplate = new PopupTemplate({
+                    title: `${riskIcon} Environmental Report - ${riskLevel.toUpperCase()}`,
+                    content: `
+                        <div style="color: #e2e8f0; font-size: 13px;">
+                            <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(148, 163, 184, 0.2);">
+                                <strong style="color: #10b981;">📍 Location</strong><br/>
+                                <div style="font-family: monospace; font-size: 12px; margin-top: 4px;">
+                                    Lat: ${locationData.latitude}°<br/>
+                                    Lng: ${locationData.longitude}°<br/>
+                                    Status: ${isInBounds ? '✓ In Zone' : '⚠ Outside Zone'}
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(148, 163, 184, 0.2);">
+                                <strong style="color: #ef4444;">⚡ Risk Score</strong><br/>
+                                <div style="margin-top: 4px;">
+                                    <div style="font-size: 20px; font-weight: bold; color: ${riskColor};">${locationData.riskScore}%</div>
+                                    <div style="background: rgba(100, 116, 139, 0.5); height: 4px; border-radius: 2px; margin-top: 4px; overflow: hidden;">
+                                        <div style="background: ${riskColor}; height: 100%; width: ${locationData.riskScore}%; border-radius: 2px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: #22c55e;">🌱 Environmental Data</strong><br/>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+                                    <div style="background: rgba(34, 197, 94, 0.1); padding: 8px; border-radius: 4px;">
+                                        <div style="color: #a8a29e; font-size: 11px;">Vegetation</div>
+                                        <div style="color: #22c55e; font-weight: bold;">${locationData.vegetation}%</div>
+                                    </div>
+                                    <div style="background: rgba(59, 130, 246, 0.1); padding: 8px; border-radius: 4px;">
+                                        <div style="color: #a8a29e; font-size: 11px;">Soil Moisture</div>
+                                        <div style="color: #3b82f6; font-weight: bold;">${locationData.soilMoisture}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="font-size: 11px; color: #94a3b8; padding-top: 8px; border-top: 1px solid rgba(148, 163, 184, 0.2);">
+                                Report: ${new Date().toLocaleString()}
+                            </div>
+                        </div>
+                    `
+                });
+
+                const graphic = new Graphic({
+                    geometry: point,
+                    symbol: markerSymbol,
+                    popupTemplate: popupTemplate
+                });
+
+                view.graphics.add(graphic);
+                view.popup.open({
+                    features: [graphic]
+                });
+
+                // Send to React component
+                try {
+                    window.parent.postMessage({
+                        type: 'LOCATION_CLICKED',
+                        payload: locationData
+                    }, '*');
+                } catch (error) {
+                    console.log('Location sent');
+                }
+            });
+
+            // Handle layer updates from parent
+            window.addEventListener('message', function(event) {
+                if (event.data && event.data.type === 'UPDATE_LAYERS') {
+                    const activeLayerIds = event.data.payload.activeLayerIds;
+                    const layerMap = {
+                        'risk-map': riskLayer,
+                        'ndvi-map': ndviLayer
+                    };
+
+                    Object.keys(layerMap).forEach(function(id) {
+                        layerMap[id].visible = activeLayerIds.includes(id);
+                    });
+                }
+            });
+
+            // Initial zoom
+            setTimeout(() => {
+                document.getElementById('zoom-level').textContent = view.zoom.toFixed(2);
+            }, 500);
+        });
+    </script>
+</body>
+</html>

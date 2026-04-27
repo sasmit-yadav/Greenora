@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet.photon.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+
+        .leaflet-container {
+            background: #030712 !important;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            cursor: crosshair !important;
+        }
+
+        .leaflet-pane,
+        .leaflet-overlay-pane,
+        .leaflet-image-layer,
+        .leaflet-interactive {
+            cursor: crosshair !important;
+        }
+
+        .leaflet-control-container,
+        .leaflet-control-container * {
+            cursor: pointer !important;
+        }
+
+        .leaflet-control-layers {
+            border-radius: 12px !important;
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45) !important;
+            border: 1px solid rgba(16, 185, 129, 0.35) !important;
+            background: rgba(2, 6, 23, 0.92) !important;
+            color: #e2e8f0 !important;
+            backdrop-filter: blur(12px);
+            padding: 8px !important;
+        }
+
+        .leaflet-control-layers-list {
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.55);
+            overflow: hidden;
+        }
+
+        .leaflet-control-layers-separator {
+            border-top-color: rgba(16, 185, 129, 0.25) !important;
+        }
+
+        .leaflet-control-layers label {
+            color: #cbd5e1 !important;
+            font-weight: 600;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: background-color 0.18s ease, color 0.18s ease;
+        }
+
+        .leaflet-control-layers label:hover {
+            background: rgba(16, 185, 129, 0.14);
+            color: #86efac !important;
+        }
+
+        .leaflet-control-layers-toggle {
+            background: #1e293b !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(16, 185, 129, 0.4) !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
+            width: 36px !important;
+            height: 36px !important;
+            background-image: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-decoration: none !important;
+        }
+
+        .leaflet-control-layers-toggle::before {
+            content: "»";
+            color: #ffffff;
+            font-size: 21px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .leaflet-control-zoom-in,
+        .leaflet-control-zoom-out {
+            background: rgba(30, 41, 59, 0.95) !important;
+            border: 1px solid rgba(16, 185, 129, 0.38) !important;
+            color: #e2e8f0 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .leaflet-control-zoom-in:hover,
+        .leaflet-control-zoom-out:hover {
+            color: #86efac !important;
+            background: rgba(15, 23, 42, 0.95) !important;
+        }
+
+        .leaflet-control-attribution {
+            background: rgba(2, 6, 23, 0.78) !important;
+            border: 1px solid rgba(16, 185, 129, 0.2) !important;
+            color: #94a3b8 !important;
+            border-radius: 8px !important;
+        }
+
+        .leaflet-control-attribution a {
+            color: #34d399 !important;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet.photon.js"></script>
+        <script>
+        var map = L.map('map', {
+            zoomControl: false, maxZoom: 28, minZoom: 1
+        }).fitBounds([[27.1381767207555,74.450731700105],[30.11794944489187,80.59988902088425]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+
+        var overlayOpacity = 0.58;
+        var zoomControl = L.control.zoom({ position: 'topleft' }).addTo(map);
+        L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map);
+
+        var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        });
+        var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{x}/{y}', {
+            attribution: 'Tiles © Esri',
+            maxZoom: 19
+        });
+        var terrainLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data © OpenStreetMap contributors',
+            maxZoom: 17
+        });
+        osmLayer.addTo(map);
+
+        map.createPane('pane_Labels');
+        map.getPane('pane_Labels').style.zIndex = 650;
+        var labelsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
+            attribution: 'Labels © CARTO',
+            maxZoom: 19,
+            subdomains: 'abcd',
+            pane: 'pane_Labels',
+            opacity: 0.95
+        });
+        map.addLayer(labelsLayer);
+
+        var bounds_group = new L.featureGroup([]);
+        map.createPane('pane_Heat_norm_0');
+        map.getPane('pane_Heat_norm_0').style.zIndex = 390;
+        var img_bounds_Heat_norm_0 = [[27.79739697396028,76.7404589542527],[29.924235257384026,79.11242664351686]];
+        var layer_Heat_norm_0 = new L.imageOverlay('data/Heat_norm_0.png', img_bounds_Heat_norm_0, { pane: 'pane_Heat_norm_0', opacity: overlayOpacity });
+        bounds_group.addLayer(layer_Heat_norm_0);
+
+        map.createPane('pane_Risk_Map_1');
+        map.getPane('pane_Risk_Map_1').style.zIndex = 400;
+        var img_bounds_Risk_Map_1 = [[27.79739697396028,76.7404589542527],[29.924235257384026,79.11242664351686]];
+        var layer_Risk_Map_1 = new L.imageOverlay('data/Risk_Map_1.png', img_bounds_Risk_Map_1, { pane: 'pane_Risk_Map_1', opacity: overlayOpacity });
+        bounds_group.addLayer(layer_Risk_Map_1);
+        map.addLayer(layer_Risk_Map_1);
+
+        map.createPane('pane_NDVI_norm_2');
+        map.getPane('pane_NDVI_norm_2').style.zIndex = 395;
+        var img_bounds_NDVI_norm_2 = [[27.79739697396028,76.7404589542527],[29.924235257384026,79.11242664351686]];
+        var layer_NDVI_norm_2 = new L.imageOverlay('data/NDVI_norm_2.png', img_bounds_NDVI_norm_2, { pane: 'pane_NDVI_norm_2', opacity: overlayOpacity });
+        bounds_group.addLayer(layer_NDVI_norm_2);
+
+        var baseLayers = {
+            "OpenStreetMap": osmLayer,
+            "Satellite": satelliteLayer,
+            "Terrain": terrainLayer
+        };
+        var overlays = {
+            "Heat Map": layer_Heat_norm_0,
+            "Risk Map": layer_Risk_Map_1,
+            "NDVI Vegetation": layer_NDVI_norm_2,
+            "Place Labels": labelsLayer
+        };
+        L.control.layers(baseLayers, overlays, { position: 'topright', collapsed: true }).addTo(map);
+
+        var leafletLayers = {
+            'heat-map': layer_Heat_norm_0,
+            'risk-map': layer_Risk_Map_1,
+            'ndvi-map': layer_NDVI_norm_2
+        };
+
+        var overlayCanvasCache = {};
+        function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+        function getCanvasForLayer(layer, key) {
+            if (overlayCanvasCache[key]) return overlayCanvasCache[key];
+            if (!layer || !layer._image || !layer._image.complete || !layer._image.naturalWidth) return null;
+            var canvas = document.createElement('canvas');
+            canvas.width = layer._image.naturalWidth;
+            canvas.height = layer._image.naturalHeight;
+            var ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(layer._image, 0, 0);
+            overlayCanvasCache[key] = canvas;
+            return canvas;
+        }
+        function sampleLayerColor(layer, key, lat, lng) {
+            if (!layer || !layer.getBounds || !layer.getBounds().contains([lat, lng])) return null;
+            var canvas = getCanvasForLayer(layer, key);
+            if (!canvas) return null;
+            var bounds = layer.getBounds();
+            var xNorm = (lng - bounds.getWest()) / (bounds.getEast() - bounds.getWest());
+            var yNorm = (bounds.getNorth() - lat) / (bounds.getNorth() - bounds.getSouth());
+            var x = clamp(Math.round(xNorm * (canvas.width - 1)), 0, canvas.width - 1);
+            var y = clamp(Math.round(yNorm * (canvas.height - 1)), 0, canvas.height - 1);
+            var pixel = canvas.getContext('2d', { willReadFrequently: true }).getImageData(x, y, 1, 1).data;
+            if (!pixel || pixel[3] < 10) return null;
+            return { r: pixel[0], g: pixel[1], b: pixel[2], a: pixel[3] };
+        }
+        function scoreRiskFromHue(pixel) {
+            if (!pixel) return null;
+            var r = pixel.r / 255, g = pixel.g / 255, b = pixel.b / 255;
+            var max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min;
+            var sat = max === 0 ? 0 : delta / max, hue = 0;
+            if (delta !== 0) {
+                if (max === r) hue = 60 * (((g - b) / delta) % 6);
+                else if (max === g) hue = 60 * (((b - r) / delta) + 2);
+                else hue = 60 * (((r - g) / delta) + 4);
+            }
+            if (hue < 0) hue += 360;
+            var hueRisk = (hue <= 15 || hue >= 345) ? 100 : (hue <= 45 ? 75 : (hue <= 75 ? 45 : (hue <= 170 ? 10 : 35)));
+            return clamp(hueRisk * (0.55 + (sat * 0.45)), 0, 100);
+        }
+        function scoreGreenDominance(pixel) {
+            if (!pixel) return null;
+            var greenDominance = pixel.g - ((pixel.r + pixel.b) / 2);
+            return clamp((greenDominance + 255) / 2.55, 0, 100);
+        }
+
+        window.addEventListener('message', function(event) {
+            if (!event.data || event.data.type !== 'UPDATE_LAYERS') return;
+            var activeLayerIds = event.data.payload.activeLayerIds || [];
+            Object.keys(leafletLayers).forEach(function(id) {
+                var layer = leafletLayers[id];
+                if (activeLayerIds.includes(id) && !map.hasLayer(layer)) map.addLayer(layer);
+                else if (!activeLayerIds.includes(id) && map.hasLayer(layer)) map.removeLayer(layer);
+            });
+        });
+
+        window.addEventListener('message', function(event) {
+            if (!event.data || event.data.type !== 'zoomToLocation') return;
+            var location = event.data.location;
+            if (location && location.bounds) map.fitBounds(location.bounds);
+        });
+
+        map.on('click', function(e) {
+            var lat = e.latlng.lat;
+            var lng = e.latlng.lng;
+            var riskPixel = sampleLayerColor(layer_Risk_Map_1, 'risk', lat, lng);
+            var ndviPixel = sampleLayerColor(layer_NDVI_norm_2, 'ndvi', lat, lng);
+            window.parent.postMessage({
+                type: 'LOCATION_CLICKED',
+                payload: {
+                    latitude: lat,
+                    longitude: lng,
+                    timestamp: new Date().toISOString(),
+                    riskOverlayScore: scoreRiskFromHue(riskPixel),
+                    ndviGreennessScore: scoreGreenDominance(ndviPixel)
+                }
+            }, '*');
+        });
+
+        L.ImageOverlay.include({
+            getBounds: function () {
+                return this._bounds;
+            }
+        });
+        </script>
+    </body>
+</html>
